@@ -113,7 +113,7 @@ if TYPE_CHECKING:
 # ruff: noqa: PLR0915
 
 # Seconds of PCM yielded directly to the player before the crossfade holdback starts buffering.
-WARMUP_DURATION = 25
+WARMUP_DURATION = 45
 
 
 @dataclass
