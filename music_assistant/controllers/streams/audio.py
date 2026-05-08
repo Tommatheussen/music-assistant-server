@@ -1885,6 +1885,7 @@ class StreamsAudio:
                 crossfade_buffer.extend(chunk)
                 del chunk
                 if len(crossfade_buffer) < crossfade_buffer_size:
+                    await asyncio.sleep(0)
                     continue
 
                 # handle crossfade of previous track and new track
