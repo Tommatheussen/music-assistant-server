@@ -7,7 +7,7 @@
   "requirements": [],
   "multi_instance": false,
   "builtin": true,
-  "allow_disable": false,
+  "allow_disable": true,
   "icon": "volume-high",
   "documentation": "https://music-assistant.io/audio-analysis-providers/loudness-analysis/"
 }
