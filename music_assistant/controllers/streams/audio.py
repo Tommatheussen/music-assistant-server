@@ -1832,7 +1832,7 @@ class StreamsAudio:
             warmup_size = int(pcm_format.pcm_sample_size * WARMUP_DURATION)
 
             bytes_written = 0
-            crossfade_buffer = b""
+            crossfade_buffer = bytearray()
             warmup_bytes = 0
             first_chunk_received = False
 
@@ -1882,7 +1882,7 @@ class StreamsAudio:
                     continue
 
                 # smart fades enabled: accumulate chunks in crossfade buffer
-                crossfade_buffer += chunk
+                crossfade_buffer.extend(chunk)
                 del chunk
                 if len(crossfade_buffer) < crossfade_buffer_size:
                     continue
