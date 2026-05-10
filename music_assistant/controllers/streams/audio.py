@@ -1829,8 +1829,12 @@ class StreamsAudio:
             crossfade_buffer_size = int(pcm_format.pcm_sample_size * crossfade_buffer_duration)
             # Round down to nearest frame boundary
             crossfade_buffer_size = (crossfade_buffer_size // frame_size) * frame_size
-            warmup_size = int(pcm_format.pcm_sample_size * WARMUP_DURATION)
-
+            warmup_size = (
+                min(int(pcm_format.pcm_sample_size * WARMUP_DURATION), crossfade_buffer_size)
+                if queue_track.streamdetails.seek_position > 0
+                else crossfade_buffer_size
+            )
+            
             bytes_written = 0
             crossfade_buffer = bytearray()
             warmup_bytes = 0
