@@ -401,7 +401,7 @@ class AudioBuffer:
             else SmartFadesMode.DISABLED
         )
         if smart_fades_mode != SmartFadesMode.DISABLED:
-            ready_threshold = 8
+            ready_threshold = 12
         elif streamdetails.volume_normalization_mode == VolumeNormalizationMode.DYNAMIC:
             # radio streams are continuous so the normalization will converge quickly,
             # use a lower threshold to reduce startup latency
