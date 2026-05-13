@@ -3178,6 +3178,11 @@ class PlayerQueuesController(CoreController):
         # which is useful for plugins that want to do scrobbling
         artists: list[Artist | ItemMapping] = getattr(media_item, "artists", [])
         artists_names = [a.name for a in artists]
+
+        
+        self.logger.info(artists)
+        self.logger.info(media_item)
+        
         self.mass.signal_event(
             EventType.MEDIA_ITEM_PLAYED,
             object_id=media_item.uri,
