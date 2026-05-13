@@ -57,6 +57,8 @@ class ScrobblerHelper:
 
         report: MediaItemPlaybackProgressReport = event.data
 
+        self.logger.debug("Processing media item played event: %s", report)
+        
         # handle optional user_id filtering
         if self.config.mass_userids and report.userid not in self.config.mass_userids:
             self.logger.debug("skipped scrobbling for user %s due to user filter", report.userid)
