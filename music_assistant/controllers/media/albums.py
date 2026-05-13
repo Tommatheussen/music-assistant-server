@@ -67,7 +67,8 @@ class AlbumsController(MediaControllerBase[Album]):
                 'provider', 'library',
                     'name', artists.name,
                     'sort_name', artists.sort_name,
-                    'media_type', 'artist'
+                    'media_type', 'artist',
+                    'external_ids', json(artists.external_ids)
                 )) FROM artists JOIN album_artists on album_artists.album_id = albums.item_id  WHERE artists.item_id = album_artists.artist_id) AS artists
             FROM albums"""
         # register (extra) api handlers
