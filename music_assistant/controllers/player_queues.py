@@ -1393,11 +1393,20 @@ class PlayerQueuesController(CoreController):
             media_items = list(radio_tracks)
 
         # only add valid/available items
-        queue_items: list[QueueItem] = [
-            QueueItem.from_media_item(queue_id, cast("PlayableMediaItemType", x))
-            for x in media_items
-            if x and x.available
-        ]
+        queue_items: list[QueueItem] = []
+        for media_item in media_items:
+            if not media_item or not media_item.available:
+                continue
+            if isinstance(media_item, Track):
+                self._log_track_identifier_trace("before QueueItem.from_media_item", media_item)
+            queue_item = QueueItem.from_media_item(
+                queue_id, cast("PlayableMediaItemType", media_item)
+            )
+            if isinstance(queue_item.media_item, Track):
+                self._log_track_identifier_trace(
+                    "after QueueItem.from_media_item", queue_item.media_item
+                )
+            queue_items.append(queue_item)
 
         if not queue_items:
             raise MediaNotFoundError("No playable items found")
@@ -1484,6 +1493,48 @@ class PlayerQueuesController(CoreController):
                 queue.items = len(queue_items)
                 self.signal_update(queue_id)
 
+    def _log_track_identifier_trace(self, label: str, track: Track) -> None:
+        """Log temporary track identifier state while debugging queue metadata hydration."""
+        album = track.album
+        album_artists = album.artists if isinstance(album, Album) else []
+        self.logger.warning(
+            "TRACK ID TRACE %s track=(%s, %s, %s, external_ids=%s, mbid=%s) "
+            "artists=%s album=(%s, %s, %s, external_ids=%s, mbid=%s, artists=%s)",
+            label,
+            type(track).__name__,
+            track.provider,
+            track.item_id,
+            track.external_ids,
+            track.mbid,
+            [
+                (
+                    type(artist).__name__,
+                    artist.name,
+                    artist.provider,
+                    artist.item_id,
+                    artist.external_ids,
+                    artist.mbid,
+                )
+                for artist in track.artists
+            ],
+            type(album).__name__ if album else None,
+            album.provider if album else None,
+            album.item_id if album else None,
+            album.external_ids if album else None,
+            album.mbid if album else None,
+            [
+                (
+                    type(artist).__name__,
+                    artist.name,
+                    artist.provider,
+                    artist.item_id,
+                    artist.external_ids,
+                    artist.mbid,
+                )
+                for artist in album_artists
+            ],
+        )
+
     @handle_play_action
     async def _handle_play(self, queue_id: str) -> None:
         """Handle play without acquiring the queue lock."""
@@ -1560,6 +1611,7 @@ class PlayerQueuesController(CoreController):
         playing_album_tracks = next_track_from_same_album or previous_track_from_same_album
         if queue_item.media_item and isinstance(queue_item.media_item, Track):
             album = queue_item.media_item.album
+            self._log_track_identifier_trace("before library replacement", queue_item.media_item)
             # prefer the full library media item so we have all metadata and provider(quality) info
             # always request the full library item as there might be other qualities available
             if library_item := await self.mass.music.get_library_item_by_prov_id(
@@ -1568,6 +1620,7 @@ class PlayerQueuesController(CoreController):
                 queue_item.media_item.provider,
             ):
                 queue_item.media_item = cast("Track", library_item)
+                self._log_track_identifier_trace("after library replacement", queue_item.media_item)
             elif not queue_item.media_item.image or queue_item.media_item.provider.startswith(
                 "ytmusic"
             ):
@@ -1575,6 +1628,7 @@ class PlayerQueuesController(CoreController):
                 # this also catches the case where they have an unavailable item in a listing
                 fetched_item = await self.mass.music.get_item_by_uri(queue_item.uri)
                 queue_item.media_item = cast("Track", fetched_item)
+                self._log_track_identifier_trace("after provider refetch", queue_item.media_item)
 
             # ensure we got the full (original) album set
             if album and (
@@ -1588,6 +1642,7 @@ class PlayerQueuesController(CoreController):
             elif album:
                 # Restore original album if we have no better alternative from the library
                 queue_item.media_item.album = album
+            self._log_track_identifier_trace("after album restore", queue_item.media_item)
             # prefer album image over track image
             if queue_item.media_item.album and queue_item.media_item.album.image:
                 org_images: list[MediaItemImage] = queue_item.media_item.metadata.images or []
@@ -3179,10 +3234,9 @@ class PlayerQueuesController(CoreController):
         artists: list[Artist | ItemMapping] = getattr(media_item, "artists", [])
         artists_names = [a.name for a in artists]
 
-        
         self.logger.info(artists)
         self.logger.info(media_item)
-        
+
         self.mass.signal_event(
             EventType.MEDIA_ITEM_PLAYED,
             object_id=media_item.uri,
