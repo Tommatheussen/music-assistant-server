@@ -1373,6 +1373,10 @@ class MetaDataController(CoreController):
                 )
                 track.metadata.update(prov_item.metadata)
 
+        if not track.mbid:
+            if mbid := await self._get_track_mbid(track):
+                track.mbid = mbid
+
         # don't merge online genres on top of source-supplied ones
         prefer_local_genres = self.config.get_value(CONF_PREFER_LOCAL_GENRES) and bool(
             track.metadata.genres
