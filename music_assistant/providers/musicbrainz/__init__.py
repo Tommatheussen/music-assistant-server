@@ -427,6 +427,20 @@ class MusicbrainzProvider(MetadataProvider):
                 return MusicBrainzArtist.from_raw(artist)
         return None
 
+    async def get_recording_details_by_isrc(self, isrc: str) -> MusicBrainzRecording | None:
+        """
+        Get musicbrainz recording details by providing an ISRC.
+
+        MusicBrainzRecording object that is returned does not contain the optional data.
+        """
+        endpoint = f"isrc/{isrc}"
+        if result := await self.get_data(endpoint):
+            self.logger.debug(
+                f"MusicBrainz search by ISRC '{isrc}' returned {result.get('recordings', [])}"
+            )
+            return MusicBrainzRecording.from_raw(result["recordings"][0])
+        return None
+
     async def get_release_group_by_track_name(
         self, artist_name: str, track_name: str
     ) -> tuple[MusicBrainzArtist, list[MusicBrainzReleaseGroup]] | None:

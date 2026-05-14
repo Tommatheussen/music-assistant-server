@@ -1373,6 +1373,10 @@ class MetaDataController(CoreController):
                 )
                 track.metadata.update(prov_item.metadata)
 
+        if not track.mbid:
+            if mbid := await self._get_track_mbid(track):
+                track.mbid = mbid
+
         # don't merge online genres on top of source-supplied ones
         prefer_local_genres = self.config.get_value(CONF_PREFER_LOCAL_GENRES) and bool(
             track.metadata.genres
@@ -1566,6 +1570,25 @@ class MetaDataController(CoreController):
         # set timestamp, used to determine when this function was last called
         podcast.metadata.last_refresh = int(time())
         await self.mass.music.podcasts.update_item_in_library(podcast.item_id, podcast)
+
+    async def _get_track_mbid(self, track: Track, force_refresh: bool = False) -> str | None:
+        """Fetch musicbrainz id by performing search using the track name and artist."""
+        if track.mbid:
+            return track.mbid
+
+        musicbrainz_provider = self.mass.get_provider("musicbrainz")
+        if not musicbrainz_provider:
+            return None
+        musicbrainz: MusicbrainzProvider = cast("MusicbrainzProvider", musicbrainz_provider)
+        if TYPE_CHECKING:
+            assert isinstance(musicbrainz, MusicbrainzProvider)
+
+        isrc = track.get_external_id(ExternalID.ISRC)
+        if isrc:
+            if recording := await musicbrainz.get_recording_details_by_isrc(isrc):
+                return recording.id
+
+        return None
 
     async def _get_artist_mbid(self, artist: Artist) -> str | None:
         """Fetch musicbrainz id by performing search using the artist name, albums and tracks."""
