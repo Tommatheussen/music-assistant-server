@@ -571,6 +571,20 @@ class MusicbrainzProvider(MetadataProvider):
 
         return list(seen.values())
 
+    async def get_recording_details_by_isrc(self, isrc: str) -> MusicBrainzRecording | None:
+        """
+        Get musicbrainz recording details by providing an ISRC.
+
+        MusicBrainzRecording object that is returned does not contain the optional data.
+        """
+        endpoint = f"isrc/{isrc}"
+        if result := await self.get_data(endpoint):
+            self.logger.debug(
+                f"MusicBrainz search by ISRC '{isrc}' returned {result.get('recordings', [])}"
+            )
+            return MusicBrainzRecording.from_raw(result["recordings"][0])
+        return None
+
     @use_cache(86400 * 30)  # Cache for 30 days
     @throttle_with_retries
     async def get_data(self, endpoint: str, **kwargs: str) -> Any:
