@@ -1626,6 +1626,25 @@ class MetaDataController(CoreController):
         )
         return None
 
+    async def _get_track_mbid(self, track: Track, force_refresh: bool = False) -> str | None:
+        """Fetch musicbrainz id by performing search using the track external IDs"""
+        if track.mbid:
+            return track.mbid
+
+        musicbrainz_provider = self.mass.get_provider("musicbrainz")
+        if not musicbrainz_provider:
+            return None
+        musicbrainz: MusicbrainzProvider = cast("MusicbrainzProvider", musicbrainz_provider)
+        if TYPE_CHECKING:
+            assert isinstance(musicbrainz, MusicbrainzProvider)
+
+        isrc = track.get_external_id(ExternalID.ISRC)
+        if isrc:
+            if recording := await musicbrainz.get_recording_details_by_isrc(isrc):
+                return recording.id
+
+        return None
+
     def _register_maintenance_tasks(self) -> None:
         """Register the recurring metadata maintenance background tasks."""
         utc_hour, utc_minute = local_clock_time_to_utc(4, 0)
