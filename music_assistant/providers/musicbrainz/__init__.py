@@ -589,7 +589,7 @@ class MusicbrainzProvider(MetadataProvider):
     @throttle_with_retries
     async def get_data(self, endpoint: str, **kwargs: str) -> Any:
         """Get data from api."""
-        url = f"https://musicbrainz-mirror.music-assistant.io/ws/2/{endpoint}"
+        url = f"https://musicbrainz.org/ws/2/{endpoint}"
         headers = {
             "User-Agent": f"Music Assistant/{self.mass.version} (https://music-assistant.io)"
         }
