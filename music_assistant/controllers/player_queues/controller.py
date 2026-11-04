@@ -1274,6 +1274,14 @@ class PlayerQueuesController(QueueLoaderMixin, PlaybackTrackerMixin, StreamFeede
             # a boundary the outgoing session mixed ahead of playback leads into an item
             # this start leaves behind
             self.mass.streams.audio.clear_crossfade_handover(queue_id)
+            # HEOS may reopen the old flow as soon as its producer ends. Stop it before
+            # rotating the session, while the replacement audio is still being prepared.
+            if (
+                queue.flow_mode
+                and target_player.provider.domain == "heos"
+                and target_player.active_output_protocol == "native"
+            ):
+                await target_player.stop()
             # always update session id when we start a new playback session
             queue_data.session_id = shortuuid.random(length=8)
             self.mass.streams.audio_processing.start_session(
